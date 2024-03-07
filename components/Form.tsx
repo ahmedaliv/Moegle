@@ -1,30 +1,55 @@
-"use client"
-import { Dispatch, SetStateAction } from 'react';
-import { Button } from './ui/button';
+"use client";
+import { Dispatch, SetStateAction } from "react";
+import { Button } from "./ui/button";
+import { io, Socket } from "socket.io-client";
+import {  useState } from "react";
 
 interface FormProps {
   setVideoChat: Dispatch<SetStateAction<boolean>>;
 }
 
-const Form = ({ setVideoChat }: FormProps) => {
+type ServerToClientEvents = {
+  paired: (peerId: string) => void;
+};
 
-      const handleStartChat = async () => {
-        // TODO: logic for starting the chat
-        setVideoChat(true);
-        const response = await fetch('/api/chat', {
-          cache: 'no-cache',
-        })
-        console.log(await response.json());
-        // const data = await response.json(); 
-      };
+type ClientToServerEvents = {
+  join: () => void;
+};
+
+const Form = ({ setVideoChat }: FormProps) => {  
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  const [socket, setSocket] = useState<Socket<ServerToClientEvents, ClientToServerEvents>>();
+  const connectToServer = () => {
+    const socket = io(`:${PORT + 1}`, { path: "/api/socket", addTrailingSlash: false });
+    setSocket(socket);
+    socket.on("connect", () => {
+      console.log("Connected")
+    });
+    socket.on("disconnect", () => {
+      console.log("Disconnected")
+    });
+    socket.on("connect_error", async err => {
+      console.log(`connect_error due to ${err.message}`)
+      await fetch("/api/socket");
+    });
+
+  };
+
+  const handleJoinChat = () => {
+    console.log("joning chat");
+    setVideoChat(true);
+    if (!socket) {
+      connectToServer();
+    }
+    socket?.emit("join");
+  };
   return (
     <div className="flex flex-row justify-center gap-4 mt-5">
-      <Button className="text-md" size="lg" onClick={handleStartChat}>
+      <Button className="text-md" size="lg" onClick={handleJoinChat}>
         Start a Video Chat
       </Button>
-
     </div>
   );
-}
+};
 
-export default Form
+export default Form;

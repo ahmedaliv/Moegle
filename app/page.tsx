@@ -6,7 +6,7 @@ import ChatPanel
 export default function Home() {
   const [videoChat, setVideoChat] = useState<boolean>(false);
   return (
-    <main className="w-[100%]">
+    <main className="w-[100%] h-full">
       {(!videoChat) && (
         <><p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Sunt, quis magnam sequi, delectus harum ex porro nulla aspernatur ipsum sapiente reiciendis eligendi possimus libero assumenda id iure perferendis incidunt ipsa?
           Architecto quam in hic aliquam quae? Officia, eum corporis dolorum distinctio adipisci numquam quis soluta nihil omnis consectetur repellendus quaerat inventore asperiores neque est fugit in! Molestias quam necessitatibus quas?
