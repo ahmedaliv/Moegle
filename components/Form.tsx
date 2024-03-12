@@ -20,7 +20,6 @@ interface FormProps {
 //   answer: (answer: RTCSessionDescriptionInit) => void;
 //   icecandidate: (candidate: RTCIceCandidateInit) => void;
 // };
-let socket;
 const Form = ({ setVideoChat }: FormProps) => {
   const handleVideoChat = () => setVideoChat(true);
   return (
