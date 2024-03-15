@@ -4,18 +4,18 @@ import { Button } from "./ui/button";
 import { io } from "socket.io-client";
 import { Socket } from "socket.io";
 
-type ServerToClientEvents   = {
-  matched: (data: { type: string; initiator: boolean }) => void;
-  receiveOffer: (data:{offer:RTCSessionDescriptionInit}) => void;
-  answerReceivedFromServer: (data:{answer:RTCSessionDescriptionInit}) => void;
-  receiveCandidate: (data:{candidate:RTCIceCandidateInit}) => void;
-};
+// type ServerToClientEvents   = {
+//   matched: (data: { type: string; initiator: boolean }) => void;
+//   receiveOffer: (data:{offer:RTCSessionDescriptionInit}) => void;
+//   answerReceivedFromServer: (data:{answer:RTCSessionDescriptionInit}) => void;
+//   receiveCandidate: (data:{candidate:RTCIceCandidateInit}) => void;
+// };
 
-type ClientToServerEvents = {
-  offerToRemote: (data:{offer:RTCSessionDescriptionInit}) => void;
-  answerSentToServer: (data:{answer:RTCSessionDescriptionInit}) => void;
-  candidateToServer: (data:{candidate:RTCIceCandidateInit}) => void;
-};
+// type ClientToServerEvents = {
+//   offerToRemote: (data:{offer:RTCSessionDescriptionInit}) => void;
+//   answerSentToServer: (data:{answer:RTCSessionDescriptionInit}) => void;
+//   candidateToServer: (data:{candidate:RTCIceCandidateInit}) => void;
+// };
 
 function ChatPanel() {
   const PORT = process.env.PORT ? Number(process.env.PORT) + 5 : 3005;
@@ -23,7 +23,7 @@ function ChatPanel() {
   const localStreamRef = useRef<HTMLVideoElement>(null);
   // const [input, setInput] = useState("");
   // const [messages, setMessages] = useState([]);
-  const socketRef = useRef(null);
+  const socketRef = useRef<Socket>(null);
   const peerConnection = useRef<RTCPeerConnection>();
   const ICE_SERVERS = {
     iceServers: [
@@ -36,15 +36,18 @@ function ChatPanel() {
     ],
   };
 
-  const handleTrackEvent = (event) => {
+  const handleTrackEvent = async (event: any) => {
     console.log("track event", event.streams);
     let rS = new MediaStream();
     if (remoteStreamRef.current) {
+      console.log(rS);
       remoteStreamRef.current.srcObject = rS;
+      console.log('added to remoteRef');
+ 
     }
     console.log(`track event -> event`);
 
-    event.streams[0].getTracks().forEach((track) => {
+    event.streams[0].getTracks().forEach((track: any) => {
       rS.addTrack(track);
     });
   };
@@ -56,7 +59,6 @@ function ChatPanel() {
       const socket = io(`:${PORT}`, {
         path: "/api/socket",
         addTrailingSlash: false,
-        retries: 3,
       
       });
 
@@ -93,7 +95,6 @@ function ChatPanel() {
         console.log(`connect_error due to ${err.message}`);
         await fetch("/api/socket");
       });
-      console.log(socket);
       
       return () => {
         socket.disconnect();
@@ -101,6 +102,7 @@ function ChatPanel() {
   }, []);
   const init = async () => {
     peerConnection.current = new RTCPeerConnection(ICE_SERVERS);
+    console.log(`created peer connection`);
     peerConnection.current.ontrack = handleTrackEvent;
     const localStream = await navigator.mediaDevices.getUserMedia({
       video: true,
@@ -112,13 +114,18 @@ function ChatPanel() {
     );
     if (localStreamRef.current) {
       localStreamRef.current.srcObject = localStream;
-      }
+    }
+    console.log(`local stream added.`);
+    
     peerConnection.current.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log("ice candidate event");
         // Send the candidate to the other peer
         if (socketRef.current) {
           if (socketRef.current.connected) {
             console.log(`ice candidate sent to the server`);
+            console.log(event.candidate);
+            console.log(socketRef.current);
             socketRef.current.emit("candidateToServer", {
               candidate: event.candidate,
             });
@@ -131,22 +138,52 @@ function ChatPanel() {
   };
 
   const createOffer = async () => {
-    const offer = await peerConnection.current?.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: true,
-    });
+    const offer = await peerConnection.current?.createOffer({offerToReceiveAudio: true, offerToReceiveVideo: true});
     await peerConnection.current?.setLocalDescription(offer);
     if (offer ) {
       socketRef.current?.emit("offerToRemote", {
       offer
       });
     }
-    console.log("offer emitted");
+    console.log("offer emitted"+ offer?.sdp);
   };
 
   const handleOffer = async (offer: RTCSessionDescriptionInit) => {
     await peerConnection?.current?.setRemoteDescription(offer);
-    const answer = await peerConnection?.current?.createAnswer();
+    peerConnection.current.onicecandidate = (event) => {
+      if (event.candidate) {
+        console.log("ice candidate event");
+        // Send the candidate to the other peer
+        if (socketRef.current) {
+          if (socketRef.current.connected) {
+            console.log(`ice candidate sent to the server`);
+            console.log(event.candidate);
+            console.log(socketRef.current);
+            socketRef.current.emit("candidateToServer", {
+              candidate: event.candidate,
+            });
+          } else {
+            console.error("Socket is not connected");
+          }
+        }
+      }
+    }
+    const localStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true,
+    });
+    localStream.getTracks().forEach((track) => {
+      peerConnection.current?.addTrack(track, localStream);
+    }
+    );
+    if (localStreamRef.current) {
+      localStreamRef.current.srcObject = localStream;
+    }
+    console.log(`local stream added.`);
+
+    const answer = await peerConnection?.current?.createAnswer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
+    console.log("Answer created" + answer?.sdp);
+    
     await peerConnection?.current?.setLocalDescription(answer);
     if (answer) {
       socketRef.current?.emit("answerSentToServer", {

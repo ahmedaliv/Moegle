@@ -43,7 +43,7 @@ export async function GET(_req: NextApiRequest, res: NextApiResponseWithSocket) 
 
     console.log("Starting Socket.IO server on port:", PORT)
 
-    const io = new Server({ path: "/api/socket", addTrailingSlash: false, cors: { origin: "*" } }).listen(PORT)
+    const io = new Server({ path: "/api/socket", addTrailingSlash: false, cors: { origin: "*" }, allowEIO3:true }).listen(PORT)
 
     io.on("connect", socket => {
       const _socket = socket
@@ -58,6 +58,19 @@ export async function GET(_req: NextApiRequest, res: NextApiResponseWithSocket) 
         const userA = waitingUsers.splice(indexA, 1)[0];
         const userB = waitingUsers.splice(indexB - 1, 1)[0];
 
+        // handling ice candidates
+        userA.on("candidateToServer", (data: any) => {
+          console.log("candidateToServer", data.candidate);
+          userB.emit("receiveCandidate", {
+            candidate: data.candidate
+          });
+        });
+        userB.on("candidateToServer", (data) => {
+          console.log('candidateToServer', data.candidate);
+          userA.emit("receiveCandidate", {
+            candidate: data.candidate
+          });
+        });
         // Notify users that they are matched
         userA.emit("matched", { type: "video", initiator: true });
         userB.emit("matched", { type: "video", initiator: false });
@@ -73,19 +86,6 @@ export async function GET(_req: NextApiRequest, res: NextApiResponseWithSocket) 
           userA.emit("answerReceivedFromServer", {
             answer: data.answer
           })
-        });
-        // handling ice candidates
-        userA.on("candidateToServer", (data: any) => {
-          console.log("candidateToServer", data.candidate);
-          userB.emit("receiveCandidate", {
-            candidate: data.candidate
-          });
-        });
-        userB.on("candidateToServer", (data) => {
-          console.log('candidateToServer', data.candidate);
-          userA.emit("receiveCandidate", {
-            candidate: data.candidate
-          });
         });
 
 
