@@ -1,69 +1,38 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
-import { io } from "socket.io-client";
-import { Socket } from "socket.io";
+import { io,Socket } from "socket.io-client";
+import { handleAnswer, handleIceCandidate, init, createOffer , handleOffer} from "@/lib/webrtc"
+import {
+    ServerToClientEvents,
+    ClientToServerEvents,
+} from "@/lib/webrtc/types";
 
-// type ServerToClientEvents   = {
-//   matched: (data: { type: string; initiator: boolean }) => void;
-//   receiveOffer: (data:{offer:RTCSessionDescriptionInit}) => void;
-//   answerReceivedFromServer: (data:{answer:RTCSessionDescriptionInit}) => void;
-//   receiveCandidate: (data:{candidate:RTCIceCandidateInit}) => void;
-// };
-
-// type ClientToServerEvents = {
-//   offerToRemote: (data:{offer:RTCSessionDescriptionInit}) => void;
-//   answerSentToServer: (data:{answer:RTCSessionDescriptionInit}) => void;
-//   candidateToServer: (data:{candidate:RTCIceCandidateInit}) => void;
-// };
 
 function ChatPanel() {
-  const PORT = process.env.PORT ? Number(process.env.PORT) + 5 : 3005;
+  const PORT = 3005;
   const remoteStreamRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<HTMLVideoElement>(null);
   // const [input, setInput] = useState("");
   // const [messages, setMessages] = useState([]);
-  const socketRef = useRef<Socket>(null);
+  const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
   const peerConnection = useRef<RTCPeerConnection>();
-  const ICE_SERVERS = {
-    iceServers: [
-      {
-        urls: [
-          "stun:stun1.1.google.com:19302",
-          "stun:stun2.1.google.com:19302",
-        ],
-      },
-    ],
-  };
-
-  const handleTrackEvent = async (event: any) => {
-    console.log("track event", event.streams);
-    let rS = new MediaStream();
-    if (remoteStreamRef.current) {
-      console.log(rS);
-      remoteStreamRef.current.srcObject = rS;
-      console.log('added to remoteRef');
- 
-    }
-    console.log(`track event -> event`);
-
-    event.streams[0].getTracks().forEach((track: any) => {
-      rS.addTrack(track);
-    });
-  };
 
   useEffect(() => {
+    const socket: Socket<ServerToClientEvents, ClientToServerEvents>
+      = io(`${process.env.NEXT_PUBLIC_SOCKETIO_URL}`);
+    socketRef.current = socket;
     if (!peerConnection.current) {
-      init();
+      init(
+        peerConnection,
+        localStreamRef,
+        remoteStreamRef,
+        socketRef
+      );
     }
-      const socket = io(`:${PORT}`, {
-        path: "/api/socket",
-        addTrailingSlash: false,
-      
-      });
 
-      socketRef.current = socket;
-      // setSocket(socket);
+    // Event listeners for the socket
+    
       socket.on("connect", () => {
         console.log("WS connected");
       });
@@ -73,134 +42,33 @@ function ChatPanel() {
         ({ type, initiator }: { type: string; initiator: boolean }) => {
           if (type === "video" && initiator) {
             console.log(`init man`);
-            createOffer();
+            createOffer(peerConnection, socketRef);
           }
         }
       );
       // handling ice candidates
-      socket.on("receiveCandidate", (data) => handleIceCandidate(data.candidate));
-        
-      socket.on("receiveOffer", async (data) => {
-        // handling the incoming offer
+      socket.on("receiveCandidate", (data) => handleIceCandidate(peerConnection,data.candidate));
+      
+      // handling the incoming offer
+      socket.on("receiveOffer", async (data):Promise<void> => {
         console.log(`incoming offer `);
-        handleOffer(data.offer);
+        handleOffer(data.offer, peerConnection, socketRef,localStreamRef);
+      });
+      // handling the incoming answer
+      socket.on("answerReceivedFromServer", async (data) => {
+        handleAnswer(peerConnection, data.answer);
       });
 
-      socket.on("answerReceivedFromServer", (data) => {
-        handleAnswer(data.answer);
-      });
-
-
+      // handling the socket connection error (reconnect)
       socket.on("connect_error", async (err) => {
         console.log(`connect_error due to ${err.message}`);
-        await fetch("/api/socket");
       });
       
       return () => {
         socket.disconnect();
       };
   }, []);
-  const init = async () => {
-    peerConnection.current = new RTCPeerConnection(ICE_SERVERS);
-    console.log(`created peer connection`);
-    peerConnection.current.ontrack = handleTrackEvent;
-    const localStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
-    localStream.getTracks().forEach((track) => {
-      peerConnection.current?.addTrack(track, localStream);
-    }
-    );
-    if (localStreamRef.current) {
-      localStreamRef.current.srcObject = localStream;
-    }
-    console.log(`local stream added.`);
-    
-    peerConnection.current.onicecandidate = (event) => {
-      if (event.candidate) {
-        console.log("ice candidate event");
-        // Send the candidate to the other peer
-        if (socketRef.current) {
-          if (socketRef.current.connected) {
-            console.log(`ice candidate sent to the server`);
-            console.log(event.candidate);
-            console.log(socketRef.current);
-            socketRef.current.emit("candidateToServer", {
-              candidate: event.candidate,
-            });
-          } else {
-            console.error("Socket is not connected");
-          }
-        }
-      }
-    };
-  };
 
-  const createOffer = async () => {
-    const offer = await peerConnection.current?.createOffer({offerToReceiveAudio: true, offerToReceiveVideo: true});
-    await peerConnection.current?.setLocalDescription(offer);
-    if (offer ) {
-      socketRef.current?.emit("offerToRemote", {
-      offer
-      });
-    }
-    console.log("offer emitted"+ offer?.sdp);
-  };
-
-  const handleOffer = async (offer: RTCSessionDescriptionInit) => {
-    await peerConnection?.current?.setRemoteDescription(offer);
-    peerConnection.current.onicecandidate = (event) => {
-      if (event.candidate) {
-        console.log("ice candidate event");
-        // Send the candidate to the other peer
-        if (socketRef.current) {
-          if (socketRef.current.connected) {
-            console.log(`ice candidate sent to the server`);
-            console.log(event.candidate);
-            console.log(socketRef.current);
-            socketRef.current.emit("candidateToServer", {
-              candidate: event.candidate,
-            });
-          } else {
-            console.error("Socket is not connected");
-          }
-        }
-      }
-    }
-    const localStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
-    localStream.getTracks().forEach((track) => {
-      peerConnection.current?.addTrack(track, localStream);
-    }
-    );
-    if (localStreamRef.current) {
-      localStreamRef.current.srcObject = localStream;
-    }
-    console.log(`local stream added.`);
-
-    const answer = await peerConnection?.current?.createAnswer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
-    console.log("Answer created" + answer?.sdp);
-    
-    await peerConnection?.current?.setLocalDescription(answer);
-    if (answer) {
-      socketRef.current?.emit("answerSentToServer", {
-        answer: answer,
-      });
-    }
-  };
-
-  const handleAnswer = async (answer: RTCSessionDescriptionInit) => {
-    await peerConnection?.current?.setRemoteDescription(answer);
-    console.log("Answer received");
-  };
-
-  const handleIceCandidate = async (candidate: RTCIceCandidateInit) => {
-    await peerConnection?.current?.addIceCandidate(candidate);
-    console.log("ice candidate added");
-  };
 
   return (
     <main className="flex flex-row justify-between max-h-screen">
