@@ -12,11 +12,17 @@ RUN npm install -g pnpm
 
 RUN pnpm install
 
+
+# RUN mkdir ./src
+
 COPY tsconfig.json ./
 
-RUN mkdir ./src
+COPY server.ts ./
 
-COPY server.ts ./src/
+
+COPY lib ./lib
+
+
 # build
 
 RUN pnpm build
