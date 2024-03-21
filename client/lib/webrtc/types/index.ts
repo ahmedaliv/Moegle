@@ -8,5 +8,6 @@ export type ServerToClientEvents   = {
 export type ClientToServerEvents = {
   offerToRemote: (data:{offer:RTCSessionDescriptionInit}) => void;
   answerSentToServer: (data:{answer:RTCSessionDescriptionInit}) => void;
-  candidateToServer: (data:{candidate:RTCIceCandidateInit}) => void;
+  candidateToServer: (data: { candidate: RTCIceCandidateInit }) => void;
+  next: () => void;
 };

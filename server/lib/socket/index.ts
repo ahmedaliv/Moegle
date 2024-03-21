@@ -5,6 +5,12 @@ export function setupSocketIO(io: Server) {
 
   io.on("connection", (socket: Socket) => {
     handleConnection(socket, waitingUsers);
+    socket.on("next", () => {
+      console.log("Next event received");
+      handleConnection(socket, waitingUsers);
+      console.log(`current waiting after next event ${waitingUsers.length}`);
+      
+    })
   });
 }
 
@@ -14,9 +20,12 @@ function handleConnection(socket: Socket, waitingUsers: Socket[]) {
     `New connection -> ${socket.id}, Total connections -> ${waitingUsers.length}`
   );
 
-  if (waitingUsers.length >= 2) {
-    matchUsers(waitingUsers);
-  }
+  // allow a random delay before matching users to simulate randomization
+  setTimeout(() => {
+    if (waitingUsers.length >= 2) {
+      matchUsers(waitingUsers);
+    }
+  }, Math.floor(Math.random() * 2000) + 2000); 
 
   socket.on("disconnect", () => {
     console.log(
@@ -37,19 +46,21 @@ function matchUsers(waitingUsers: Socket[]) {
   const [indexA, indexB] = getRandomPairIndices(waitingUsers.length);
   const userA = waitingUsers.splice(indexA, 1)[0];
   const userB = waitingUsers.splice(indexB - 1, 1)[0];
+  console.log(`matched ${userA.id} with ${userB.id}`);
 
   userA.emit("matched", { type: "video", initiator: true });
   userB.emit("matched", { type: "video", initiator: false });
     // webrtc event listeners 
-    userA.on(
+    userA.once(
         "offerToRemote",
-        (data: { offer: RTCSessionDescriptionInit }) => {
+      (data: { offer: RTCSessionDescriptionInit }) => {
+          console.log(`offer sent to user b with socket id ${userB.id} from ${userA.id}`);
           userB.emit("receiveOffer", {
             offer: data.offer,
           });
         }
       );
-      userB.on(
+      userB.once(
         "answerSentToServer",
         (data: { answer: RTCSessionDescriptionInit }) => {
           userA.emit("answerReceivedFromServer", {
@@ -57,7 +68,7 @@ function matchUsers(waitingUsers: Socket[]) {
           });
         }
       );
-      userA.on(
+      userA.once(
         "candidateToServer",
         (data: { candidate: RTCIceCandidateInit }) => {
           userB.emit("receiveCandidate", {
@@ -65,16 +76,15 @@ function matchUsers(waitingUsers: Socket[]) {
           });
         }
       );
-      userB.on("candidateToServer", (data: { candidate: RTCIceCandidate }) => {
+      userB.once("candidateToServer", (data: { candidate: RTCIceCandidate }) => {
         userA.emit("receiveCandidate", {
           candidate: data.candidate,
         });
       });
-    
+       
+      console.log(`current waiting after matching ${waitingUsers.length}`);
+      
 
-  // Remove matched users from waiting users array
-  waitingUsers.splice(waitingUsers.indexOf(userA), 1);
-  waitingUsers.splice(waitingUsers.indexOf(userB), 1);
 }
 
 function getRandomPairIndices(maxIndex: number): [number, number] {
