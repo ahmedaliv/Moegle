@@ -4,7 +4,7 @@ import { Server } from "socket.io";
 import { fastifyCors } from '@fastify/cors'
 import 'dotenv/config'
 import { setupSocketIO } from "./lib/socket/index.js";
-
+import http  from "http";
 
 const server = Fastify({
   logger: true,
@@ -27,6 +27,30 @@ server.ready().then(() => {
   // Pass the io object to the setupSocketIO function
   setupSocketIO(server.io);
 });
+
+// Health check scheduler
+const pingHealthCheckScheduler = (() => {
+  let pingCount = 0;
+
+  // Health check route
+  server.get('/health', async (request, reply) => {
+    pingCount++; 
+    return { status: 'ok' };
+  });
+
+  // ping function 
+  const pingHealthCheck = () => {
+    http.get('http://localhost:3005/health', (res) => {
+      console.log(`Ping ${pingCount} to health check endpoint. Status: ${res.statusCode}`);
+    }).on('error', (err) => {
+      console.error(`Error pinging health check endpoint: ${err.message}`);
+    });
+  };
+
+  // Ping health check endpoint every 10 minutes
+  setInterval(pingHealthCheck, 60000);
+
+})();
 // Run the server!
 server.listen({
   host: "0.0.0.0"
