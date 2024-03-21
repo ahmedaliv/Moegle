@@ -84,21 +84,9 @@ export const init = async (
       peerConnection.current?.iceConnectionState === "closed"
     ) {
       // Disable remote stream
-      if (remoteStreamRef.current) {
-        remoteStreamRef.current.srcObject = null;
-      }
       console.log("Peer disconnected");
-          // close current connection with the peer
-    if (peerConnection.current) {
-      peerConnection.current.ontrack = null;
-      peerConnection.current.onicecandidate = null;
-      peerConnection.current.oniceconnectionstatechange = null;
-      peerConnection.current?.close();
-      peerConnection.current = undefined;
-      console.log('resetting');
-    }
-    
-    if(remoteStreamRef.current) remoteStreamRef.current.srcObject = null
+      handleNext(peerConnection, localStreamRef, remoteStreamRef, socketRef);
+
     }
   };
   peerConnection.current.ontrack = handleTrackEvent(remoteStreamRef);
@@ -229,3 +217,45 @@ export const handleIceCandidate = async (
   await peerConnection?.current?.addIceCandidate(candidate);
   console.log("ice candidate added");
 };
+
+/** 
+
+  * Cleans up the current connection with the peer.
+
+  @param peerConnection - A mutable reference to the RTCPeerConnection object.
+  @param remoteStreamRef - A mutable reference to the remote media stream object.
+
+  @returns void
+*/
+
+export const cleanUpRTCConnection = (
+  peerConnection: MutableRefObject<RTCPeerConnection | undefined>,
+  remoteStreamRef: MutableRefObject<HTMLVideoElement | null>
+) => {
+  // close current connection with the peer
+  if (peerConnection.current) {
+    peerConnection.current.ontrack = null;
+    peerConnection.current.onicecandidate = null;
+    peerConnection.current.oniceconnectionstatechange = null;
+    peerConnection.current?.close();
+    peerConnection.current = undefined;
+    console.log("resetting");
+  }
+  if (remoteStreamRef.current) remoteStreamRef.current.srcObject = null;
+};
+
+
+export const handleNext = (
+  peerConnection: MutableRefObject<RTCPeerConnection | undefined>,
+  localStreamRef: MutableRefObject<HTMLVideoElement | null>,
+  remoteStreamRef: MutableRefObject<HTMLVideoElement | null>,
+  socketRef: MutableRefObject<Socket<
+    ServerToClientEvents,
+    ClientToServerEvents
+  > | null>
+) => {
+    cleanUpRTCConnection(peerConnection, remoteStreamRef);
+    // init again
+    init(peerConnection, localStreamRef, remoteStreamRef, socketRef);
+    socketRef.current?.emit("next");
+  };
