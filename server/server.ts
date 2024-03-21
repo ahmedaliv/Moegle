@@ -2,7 +2,6 @@ import Fastify from "fastify";
 import fastifyIO from "fastify-socket.io";
 import { Server } from "socket.io";
 import { fastifyCors } from '@fastify/cors'
-import { Socket } from "socket.io";
 import 'dotenv/config'
 import { setupSocketIO } from "./lib/socket/index.js";
 

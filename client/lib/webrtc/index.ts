@@ -88,11 +88,22 @@ export const init = async (
         remoteStreamRef.current.srcObject = null;
       }
       console.log("Peer disconnected");
+          // close current connection with the peer
+    if (peerConnection.current) {
+      // peerConnection.current.ontrack = null;
+      peerConnection.current.onicecandidate = null;
+      peerConnection.current.oniceconnectionstatechange = null;
+      peerConnection.current?.close();
+      peerConnection.current = undefined;
+      console.log('resetting');
+    }
+    
+    if(remoteStreamRef.current) remoteStreamRef.current.srcObject = null
     }
   };
   peerConnection.current.ontrack = handleTrackEvent(remoteStreamRef);
   const localStream = await navigator.mediaDevices.getUserMedia({
-    video: true,
+    video:true, 
     audio: true,
   });
   localStream.getTracks().forEach((track) => {

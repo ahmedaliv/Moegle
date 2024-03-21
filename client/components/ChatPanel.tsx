@@ -16,7 +16,7 @@ function ChatPanel() {
   // const [input, setInput] = useState("");
   // const [messages, setMessages] = useState([]);
   const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
-  const peerConnection = useRef<RTCPeerConnection>();
+  const peerConnection = useRef<RTCPeerConnection | undefined>();
 
   useEffect(() => {
     const socket: Socket<ServerToClientEvents, ClientToServerEvents>
@@ -47,8 +47,7 @@ function ChatPanel() {
         }
       );
       // handling ice candidates
-      socket.on("receiveCandidate", (data) => handleIceCandidate(peerConnection,data.candidate));
-      
+    socket.on("receiveCandidate", (data) => handleIceCandidate(peerConnection, data.candidate));
       // handling the incoming offer
       socket.on("receiveOffer", async (data):Promise<void> => {
         console.log(`incoming offer `);
@@ -69,7 +68,22 @@ function ChatPanel() {
       };
   }, []);
 
-
+  const handleNext = () => { 
+    // close current connection with the peer
+    if (peerConnection.current) {
+      peerConnection.current.ontrack = null;
+      peerConnection.current.onicecandidate = null;
+      peerConnection.current.oniceconnectionstatechange = null;
+      peerConnection.current?.close();
+      // peerConnection.current = null;
+      console.log('resetting');
+    }
+    
+    if(remoteStreamRef.current) remoteStreamRef.current.srcObject = null
+    // init again
+    init(peerConnection, localStreamRef, remoteStreamRef, socketRef);
+    socketRef.current?.emit("next");
+  }
   return (
     <main className="flex flex-row justify-between max-h-screen">
       <div className="w-[34%] chat-video-container flex items-stretch">
@@ -100,7 +114,7 @@ function ChatPanel() {
           {/* Add your messages here */}
         </div>
         <div className="text-chat-area flex flex-row gap-3 mt-3 items-center">
-          <Button size="lg" variant="outline" className="h-full">
+          <Button size="lg" variant="outline" className="h-full" onClick={()=>handleNext()}>
             Next
           </Button>
           <Textarea />
