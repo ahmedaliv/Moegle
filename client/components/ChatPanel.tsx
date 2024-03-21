@@ -40,6 +40,7 @@ function ChatPanel() {
       socket.on(
         "matched",
         ({ type, initiator }: { type: string; initiator: boolean }) => {
+          playMatchSound();
           if (type === "video" && initiator) {
             console.log(`init man`);
             createOffer(peerConnection, socketRef);
@@ -84,6 +85,10 @@ function ChatPanel() {
     init(peerConnection, localStreamRef, remoteStreamRef, socketRef);
     socketRef.current?.emit("next");
   }
+  const playMatchSound = () => {
+      const audio = new Audio("/sounds/match-notification.wav");
+      audio.play();
+    };
   return (
     <main className="flex flex-row justify-between max-h-screen">
       <div className="w-[34%] chat-video-container flex items-stretch">

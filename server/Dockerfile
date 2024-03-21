@@ -6,7 +6,7 @@ WORKDIR /usr/src/app
 # Install app dependencies
 COPY package.json ./
 COPY pnpm-lock.yaml ./
-
+COPY nodemon.json ./
 
 RUN npm install -g pnpm
 
