@@ -68,7 +68,7 @@ function matchUsers(waitingUsers: Socket[]) {
           });
         }
       );
-      userA.once(
+      userA.on(
         "candidateToServer",
         (data: { candidate: RTCIceCandidateInit }) => {
           userB.emit("receiveCandidate", {
@@ -76,7 +76,7 @@ function matchUsers(waitingUsers: Socket[]) {
           });
         }
       );
-      userB.once("candidateToServer", (data: { candidate: RTCIceCandidate }) => {
+      userB.on("candidateToServer", (data: { candidate: RTCIceCandidate }) => {
         userA.emit("receiveCandidate", {
           candidate: data.candidate,
         });

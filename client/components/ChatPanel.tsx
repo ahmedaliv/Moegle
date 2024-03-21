@@ -76,7 +76,7 @@ function ChatPanel() {
       peerConnection.current.onicecandidate = null;
       peerConnection.current.oniceconnectionstatechange = null;
       peerConnection.current?.close();
-      // peerConnection.current = null;
+      peerConnection.current = undefined;
       console.log('resetting');
     }
     
@@ -86,9 +86,15 @@ function ChatPanel() {
     socketRef.current?.emit("next");
   }
   const playMatchSound = () => {
-      const audio = new Audio("/sounds/match-notification.wav");
-      audio.play();
-    };
+    const audio = new Audio("/sounds/match-notification.wav");
+    audio.addEventListener(
+      "canplaythrough",
+      () => {
+        audio.play();
+      },
+      { once: true }
+    );
+  };
   return (
     <main className="flex flex-row justify-between max-h-screen">
       <div className="w-[34%] chat-video-container flex items-stretch">

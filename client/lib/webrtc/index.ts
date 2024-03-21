@@ -90,7 +90,7 @@ export const init = async (
       console.log("Peer disconnected");
           // close current connection with the peer
     if (peerConnection.current) {
-      // peerConnection.current.ontrack = null;
+      peerConnection.current.ontrack = null;
       peerConnection.current.onicecandidate = null;
       peerConnection.current.oniceconnectionstatechange = null;
       peerConnection.current?.close();
