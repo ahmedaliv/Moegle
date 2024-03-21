@@ -9,6 +9,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@capacitor/android": "^5.7.4",
+    "@capacitor/cli": "^5.7.4",
+    "@capacitor/core": "^5.7.4",
     "@prisma/client": "^5.10.2",
     "@radix-ui/react-slot": "^1.0.2",
     "bufferutil": "^4.0.8",
