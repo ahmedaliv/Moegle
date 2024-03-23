@@ -1,77 +1,24 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
-import { io, Socket } from "socket.io-client";
 import {
-  handleAnswer,
-  handleIceCandidate,
   init,
-  createOffer,
-  handleOffer,
   handleNext,
 } from "@/lib/webrtc";
-import { ServerToClientEvents, ClientToServerEvents } from "@/lib/webrtc/types";
-import { playMatchNotification } from "@/lib/sound-utils";
+import useSocket from "@/app/hooks/useSocket";
 
 export default function ChatPanel() {
-  const PORT = 3005;
   const remoteStreamRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<HTMLVideoElement>(null);
   // const [input, setInput] = useState("");
   // const [messages, setMessages] = useState([]);
-  const socketRef = useRef<Socket<
-    ServerToClientEvents,
-    ClientToServerEvents
-  > | null>(null);
   const peerConnection = useRef<RTCPeerConnection | undefined>();
+  const socketRef = useSocket({peerConnection,localStreamRef}) 
 
   useEffect(() => {
-    const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-      `${process.env.NEXT_PUBLIC_SOCKETIO_URL}`
-    );
-    socketRef.current = socket;
     if (!peerConnection.current) {
       init(peerConnection, localStreamRef, remoteStreamRef, socketRef);
     }
-
-    // Event listeners for the socket
-
-    socket.on("connect", () => {
-      console.log("WS connected");
-    });
-
-    socket.on(
-      "matched",
-      ({ type, initiator }: { type: string; initiator: boolean }) => {
-        playMatchNotification();
-        if (type === "video" && initiator) {
-          console.log(`init man`);
-          createOffer(peerConnection, socketRef);
-        }
-      }
-    );
-    // handling ice candidates
-    socket.on("receiveCandidate", (data) =>
-      handleIceCandidate(peerConnection, data.candidate)
-    );
-    // handling the incoming offer
-    socket.on("receiveOffer", async (data): Promise<void> => {
-      console.log(`incoming offer `);
-      handleOffer(data.offer, peerConnection, socketRef, localStreamRef);
-    });
-    // handling the incoming answer
-    socket.on("answerReceivedFromServer", async (data) => {
-      handleAnswer(peerConnection, data.answer);
-    });
-
-    // handling the socket connection error (reconnect)
-    socket.on("connect_error", async (err) => {
-      console.log(`connect_error due to ${err.message}`);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
   }, []);
 
   return (
@@ -108,12 +55,14 @@ export default function ChatPanel() {
             size="lg"
             variant="outline"
             className="h-full"
-            onClick={() => handleNext(
-              peerConnection,
-              localStreamRef,
-              remoteStreamRef,
-              socketRef
-            )}
+            onClick={() =>
+              handleNext(
+                peerConnection,
+                localStreamRef,
+                remoteStreamRef,
+                socketRef
+              )
+            }
           >
             Next
           </Button>
@@ -127,4 +76,3 @@ export default function ChatPanel() {
     </main>
   );
 }
-
