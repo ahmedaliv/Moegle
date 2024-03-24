@@ -16,7 +16,8 @@ const MobileVideoChat = ({
         <p>You both speak the same language - English </p>
       </div>
       <div
-        className="flex
+        className="
+        flex
        flex-col
         w-full
          relative mt-4 "
@@ -24,11 +25,11 @@ const MobileVideoChat = ({
         <video
           ref={remoteStreamRef}
           className={` 
-            bg-neutral-700
+            bg-black
             w-full
             border-t-2
-            h-[31vh]
-             border-white`}
+            h-[26vh]
+            border-white`}
           autoPlay
           playsInline
         />
@@ -37,12 +38,12 @@ const MobileVideoChat = ({
           autoPlay
           muted
           className={`
-            bg-blue
+            bg-black
             absolute 
-            top-0 
-            right-0
+            top-[-2px]
+            right-[0px]
             mt-1
-            w-[22vw]
+            w-[12vw]
             h-[8vh]
             `}
         />

@@ -1,6 +1,4 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Textarea } from "./ui/textarea";
-import { Button } from "./ui/button";
 import { init, handleNext } from "@/lib/webrtc";
 import useSocket from "@/app/hooks/useSocket";
 import MobileVideoChat from "./VideoChat/MobileVideoChat";
@@ -32,7 +30,7 @@ export default function ChatPanel() {
     console.log("Desktop device detected");
   }
   return (
-    <main className="flex flex-col sm:flex-row justify-between">
+    <main className="flex flex-col items-center justify-end  sm:flex-row  ">
       {isMobile ? (
         <MobileVideoChat
           localStreamRef={localStreamRef}
@@ -45,7 +43,7 @@ export default function ChatPanel() {
         />
       )}
       <hr className="mt-2" />
-      <div className="w-[100%] sm:w-[73%] flex flex-col items-center h-[47vh] sm:h-[80vh] mt-4 sm:mt-0">
+      <div className="w-[100%] sm:w-[73%] flex flex-col items-center  sm:h-[80vh] mt-4 sm:mt-0">
         {!isMobile && (
           <div className="text-[10px] sm:text-[15px] w-full text-center">
             <p>You are now chatting with a random stranger</p>
@@ -59,8 +57,9 @@ export default function ChatPanel() {
           localStreamRef={localStreamRef}
           remoteStreamRef={remoteStreamRef}
           socketRef={socketRef}
-          chatChannel={chatChannel} />
-        </div> 
+          chatChannel={chatChannel}
+        />
+      </div>
     </main>
   );
 }

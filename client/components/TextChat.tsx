@@ -26,7 +26,6 @@ const TextChat = ({
 }) => {
   const [chatMessage, setChatMessage] = useState("");
   const [chatHistory, setChatHistory] = useState<any>([]);
-  const messageEndRef = useRef<HTMLDivElement>(null);
   if (chatChannel) {
     chatChannel.onmessage = (event) => {
       setChatHistory([...chatHistory, JSON.parse(event.data)]);
@@ -66,10 +65,7 @@ const TextChat = ({
   return (
     <>
       <div
-        className={cn(
-          className,
-          "w-full flex h-[38vh] sm:h-[55vh] scrollbar-black"
-        )}
+        className={cn(className, "w-full flex flex-grow h-[20vh] sm:h-[55vh]")}
       >
         <ScrollArea
           className="
@@ -93,7 +89,7 @@ const TextChat = ({
                 className={`
                 w-[auto]
                   mr-auto
-                  p-2
+                  p-1
                   `}
               >
                 {data.id === socketRef.current?.id ? (
@@ -113,7 +109,7 @@ const TextChat = ({
           <div ref={chatEndRef}></div>
         </ScrollArea>
       </div>
-      <div className="w-full sm:h-[80px] flex flex-row gap-3  justify-center items-center">
+      <div className="w-full h-[75px] sm:max-h-[80px] flex  gap-3  justify-center items-center">
         <Button
           variant="default"
           className="h-full w-[25%] sm:w-[15%] rounded-sm"
@@ -132,6 +128,7 @@ const TextChat = ({
         </Button>
         <Textarea
           value={chatMessage}
+          rows={1}
           onChange={(e) => setChatMessage(e.target.value)}
           onKeyDown={handleKeyPress}
         />

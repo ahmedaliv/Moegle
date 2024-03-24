@@ -12,8 +12,8 @@ const Navbar = () => {
             height={40}
             className="object-contain"
           />
-          <h2 className="text-lg font-medium  text-bold">Talk to stranger</h2>
-          <p>+5000 Online</p>
+          <h2 className=" text-md sm:text-lg font-medium  text-bold">Talk to stranger</h2>
+          <p className="text-sm sm:text-lg">+5000 Online</p>
         </nav>
       </div>
     </header>
