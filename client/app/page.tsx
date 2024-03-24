@@ -1,5 +1,5 @@
 "use client";
-import Form from "@/components/Form";
+import Form from "@/components/ui/Form";
 import { useState } from "react";
 import ChatPanel from "@/components/ChatPanel";
 export default function Home() {

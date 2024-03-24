@@ -71,7 +71,6 @@ export const init = async (
     ClientToServerEvents
   > | null> // Update the type here
 ) => {
-  console.log(ICE_SERVERS);
   peerConnection.current = new RTCPeerConnection(ICE_SERVERS);
   console.log(`created peer connection`);
   // Handle ice connection state change
@@ -131,8 +130,22 @@ export const init = async (
  */
 export const createOffer = async (
   peerConnection: MutableRefObject<RTCPeerConnection | undefined>,
-  socketRef: MutableRefObject<Socket | null>
+  socketRef: MutableRefObject<Socket | null>,
+  setChatChannel: React.Dispatch<React.SetStateAction<RTCDataChannel | undefined>>
 ) => {
+  if (peerConnection.current) {
+    const chatChannel = peerConnection.current.createDataChannel("chat");
+    setChatChannel(chatChannel);
+    chatChannel.onopen = () => {
+      console.log("chat channel opened");
+    };
+    chatChannel.onmessage = (event) => {
+      console.log(`message received: ${event.data}`);
+    };
+    chatChannel.onclose = () => {
+      console.log("chat channel closed");
+    };
+  }
   const offer = await peerConnection.current?.createOffer({
     offerToReceiveAudio: true,
     offerToReceiveVideo: true,
@@ -150,7 +163,8 @@ export const handleOffer = async (
   offer: RTCSessionDescriptionInit,
   peerConnection: MutableRefObject<RTCPeerConnection | undefined>,
   socketRef: MutableRefObject<Socket | null>,
-  localStreamRef: MutableRefObject<HTMLVideoElement | null>
+  localStreamRef: MutableRefObject<HTMLVideoElement | null>,
+  setChatChannel: React.Dispatch<React.SetStateAction<RTCDataChannel | undefined>>
 ) => {
   await peerConnection?.current?.setRemoteDescription(offer);
 
@@ -174,6 +188,22 @@ export const handleOffer = async (
       }
     };
   }
+    if (peerConnection.current) {
+      peerConnection.current.ondatachannel = (event) => {
+        const chatChannel = event.channel;
+        setChatChannel(chatChannel);
+        chatChannel.onopen = () => {
+          console.log("chat channel opened");
+        };
+        chatChannel.onmessage = (event) => {
+          console.log(`message received: ${event.data}`);
+        };
+        chatChannel.onclose = () => {
+          console.log("chat channel closed");
+        };
+        // if(peerConnection.current) peerConnection.current.channel = chatChannel;
+      };
+    }
   const localStream = await navigator.mediaDevices.getUserMedia({
     video: true,
     audio: true,
