@@ -13,6 +13,23 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Moegle",
   description: "Omegle but with more moe",
+  keywords: ["moegle", "omegle", "moe"],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://moegle.vercel.app",
+    siteName: "Moegle",
+    title: "Moegle",
+    description: "Omegle but with more moe",
+    images: [
+      {
+        url: "/logo.png",
+        width: 400,
+        height: 300,
+        alt: "Moegle",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
