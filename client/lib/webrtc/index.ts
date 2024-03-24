@@ -1,35 +1,31 @@
 import { MutableRefObject } from "react";
 import { Socket } from "socket.io-client";
 import { ServerToClientEvents, ClientToServerEvents } from "@/lib/webrtc/types";
+let ICE_SERVERS: RTCConfiguration;
+if (process.env.NEXT_PUBLIC_ICE_SERVERS) {
+   ICE_SERVERS = JSON.parse(process.env.NEXT_PUBLIC_ICE_SERVERS);
+} else {
+   ICE_SERVERS = {
+    iceServers: [
+       {
+         urls: "stun:stun.l.google.com:19302",
+       },
+       {
+        urls: "stun:stun1.l.google.com:19302",  
+       },
+       {
+        urls: "stun:stun2.l.google.com:19302",  
+       },
+       {
+        urls: "stun:stun3.l.google.com:19302",  
+       },
+       {
+        urls: "stun:stun4.l.google.com:19302",
+       }
+    ],
+  };
 
-const ICE_SERVERS = {
- iceServers: [
-      {
-        urls: "stun:stun.relay.metered.ca:80",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:80",
-        username: "2750906d299ed597fb228d3b",
-        credential: "XEm1rO/AIW1Ke9pH",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:80?transport=tcp",
-        username: "2750906d299ed597fb228d3b",
-        credential: "XEm1rO/AIW1Ke9pH",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:443",
-        username: "2750906d299ed597fb228d3b",
-        credential: "XEm1rO/AIW1Ke9pH",
-      },
-      {
-        urls: "turns:global.relay.metered.ca:443?transport=tcp",
-        username: "2750906d299ed597fb228d3b",
-        credential: "XEm1rO/AIW1Ke9pH",
-      },
-  ],
-};
-
+}
 /**
  * Handles the firing of the ontrack event on the peer connection.
  *
@@ -75,6 +71,7 @@ export const init = async (
     ClientToServerEvents
   > | null> // Update the type here
 ) => {
+  console.log(ICE_SERVERS);
   peerConnection.current = new RTCPeerConnection(ICE_SERVERS);
   console.log(`created peer connection`);
   // Handle ice connection state change
@@ -86,12 +83,12 @@ export const init = async (
       // Disable remote stream
       console.log("Peer disconnected");
       handleNext(peerConnection, localStreamRef, remoteStreamRef, socketRef);
-
     }
   };
+
   peerConnection.current.ontrack = handleTrackEvent(remoteStreamRef);
   const localStream = await navigator.mediaDevices.getUserMedia({
-    video:true, 
+    video: true,
     audio: true,
   });
   localStream.getTracks().forEach((track) => {
@@ -210,12 +207,14 @@ export const handleAnswer = async (
   console.log("Answer received");
 };
 
-export const handleIceCandidate = async (
+export const handleIceCandidate =  (
   peerConnection: MutableRefObject<RTCPeerConnection | undefined>,
   candidate: RTCIceCandidateInit
 ) => {
-  await peerConnection?.current?.addIceCandidate(candidate);
-  console.log("ice candidate added");
+  if (peerConnection.current) {
+    peerConnection.current.addIceCandidate(candidate);
+    console.log("ice candidate added");
+  }
 };
 
 /** 
@@ -244,7 +243,6 @@ export const cleanUpRTCConnection = (
   if (remoteStreamRef.current) remoteStreamRef.current.srcObject = null;
 };
 
-
 export const handleNext = (
   peerConnection: MutableRefObject<RTCPeerConnection | undefined>,
   localStreamRef: MutableRefObject<HTMLVideoElement | null>,
@@ -254,8 +252,8 @@ export const handleNext = (
     ClientToServerEvents
   > | null>
 ) => {
-    cleanUpRTCConnection(peerConnection, remoteStreamRef);
-    // init again
-    init(peerConnection, localStreamRef, remoteStreamRef, socketRef);
-    socketRef.current?.emit("next");
-  };
+  cleanUpRTCConnection(peerConnection, remoteStreamRef);
+  // init again
+  init(peerConnection, localStreamRef, remoteStreamRef, socketRef);
+  socketRef.current?.emit("next");
+};

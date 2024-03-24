@@ -24,7 +24,7 @@ const Form = ({ setVideoChat }: FormProps) => {
   const handleVideoChat = () => setVideoChat(true);
   return (
     <div className="flex flex-row justify-center gap-4 mt-5">
-      <Button className="text-md" size="lg" onClick={handleVideoChat}>
+      <Button className="text-[16px]" size="lg" onClick={handleVideoChat}>
         Start a Video Chat
       </Button>
     </div>
