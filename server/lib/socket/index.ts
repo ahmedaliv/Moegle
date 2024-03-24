@@ -1,4 +1,6 @@
+import {  includes } from "lodash-es";
 import { Server, Socket } from "socket.io";
+
 
 export function setupSocketIO(io: Server) {
   const waitingUsers: Socket[] = [];
@@ -7,8 +9,14 @@ export function setupSocketIO(io: Server) {
     handleConnection(socket, waitingUsers);
     socket.on("next", () => {
       console.log("Next event received");
-      handleConnection(socket, waitingUsers);
-      console.log(`current waiting after next event ${waitingUsers.length}`);
+      // check if the user already in the waiting list
+      const isInWaiting = includes(waitingUsers, socket);
+      if (!isInWaiting) {
+        handleConnection(socket, waitingUsers);
+        console.log("User added to waiting list, total current waiting users", waitingUsers.length);
+      } else {
+        console.log("User already in waiting list");
+      }
       
     })
   });
