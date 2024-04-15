@@ -7,8 +7,8 @@ interface FormProps {
 const Form = ({ setVideoChat }: FormProps) => {
   const handleVideoChat = () => setVideoChat(true);
   return (
-    <div className="flex flex-row justify-center gap-4 mt-5">
-      <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mt-8" onClick={handleVideoChat}>
+    <div className="flex flex-row justify-center gap-4 mt-2">
+      <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mt-4" onClick={handleVideoChat}>
       Join the Conversation
       </button>
     </div>
