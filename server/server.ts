@@ -28,6 +28,7 @@ server.ready().then(() => {
   setupSocketIO(server.io);
 });
 
+
 // Health check scheduler
 const pingHealthCheckScheduler = (() => {
   let pingCount = 0;
@@ -47,8 +48,16 @@ const pingHealthCheckScheduler = (() => {
     });
   };
 
+  // Reset pingCount every 24 hours (86400000 milliseconds)
+  const resetPingCount = () => {
+    pingCount = 0;
+  };
+
   // Ping health check endpoint every 10 minutes
   setInterval(pingHealthCheck, 60000);
+
+  // Reset pingCount every 24 hours
+  setInterval(resetPingCount, 86400000);
 
 })();
 // Run the server!

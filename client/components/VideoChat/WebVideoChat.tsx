@@ -7,7 +7,7 @@ const WebVideoChat = ({
 }) => {
   return (
     <div className="w-[42%] sm:w-[25%] flex">
-      <div className="flex flex-col justify-center w-full">
+      <div className="flex flex-col justify-center w-full m-2">
         <video
           ref={localStreamRef}
           autoPlay
